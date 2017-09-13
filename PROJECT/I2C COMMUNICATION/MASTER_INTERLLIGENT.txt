@@ -1,0 +1,142 @@
+/*
+ *	File			:	main.c
+ *	Date created	:	11/07/2016
+ *	Author			:	Nguyen Chinh Thuy
+ *	Tool			:	CCS6.1.2.00015 (C programming)
+ *	Current version	:	1.0.1
+ *	Description		:	Construct I2C communication system
+ *	Target object	:	MSP430G2553
+ */
+/**************************************************************************************************
+ *	IMPORT
+ *************************************************************************************************/
+#include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <string.h>
+
+#include <msp430g2553.h>
+#include "VERSION 1_0_1/CLOCK_1_0_1.h"		// Struct inside struct
+#include "VERSION 1_0_1/GPIO_1_0_1.h"		// Const parameter
+#include "VERSION 2_0_1/USCI_I2C_2_0_1.h"	// Const parameter
+#include "VERSION 1_2_3/USCI_UART_1_2_3.h"	// Struct inside struct
+#include "VERSION 1_0_1/WATCHDOG_1_0_1.h"
+
+
+/**************************************************************************************************
+ *	DEFINITIONs
+ *************************************************************************************************/
+/* Frequency */
+#define		FREQUENCY				16		// 16MHz
+
+
+/**************************************************************************************************
+ *	GLOBALs
+ *************************************************************************************************/
+/* Get data from another chip through I2C */
+unsigned char varRx;					// Store data from RX
+
+
+/**************************************************************************************************
+ *	SUB-ROUTINEs
+ *************************************************************************************************/
+/*
+ * 	Function:
+ *	Purpose	:
+ * 	Input	:
+ * 	Output	:
+ */
+void
+strEncoder(unsigned char* strData, uint8_t varNo, char* strName, uint8_t arrID[], char arrPassword[])
+{
+	int i = 5, j = 0;
+
+	strData[0] = '/';					// Starting of Frame
+
+	strData[1] = '<';					// Part of varNo
+	strData[2] = varNo;
+	strData[3] = '>';
+
+	strData[4] = '<';					// Part of strName
+	while (strName[j] != '\0')
+	{
+		strData[i] = strName[j];
+		i++;
+		j++;
+	}
+	j = 0;
+	strData[i] = '>';
+
+	strData[++i] = '<';					// Part of arrID
+	strData[++i] = arrID[j];
+	strData[++i] = arrID[++j];
+	strData[++i] = arrID[++j];
+	strData[++i] = arrID[++j];
+	strData[++i] = arrID[++j];
+	strData[++i] = '>';
+	j = 0;
+
+	strData[++i] = '<';					// Part of arrPassword
+	strData[++i] = arrPassword[j];
+	strData[++i] = arrPassword[++j];
+	strData[++i] = arrPassword[++j];
+	strData[++i] = arrPassword[++j];
+	strData[++i] = '>';
+
+	strData[++i] = '\0';				// Ending of Frame
+}
+//-------------------------------------------------------------------------------------------------
+
+
+/**************************************************************************************************
+ *	MAIN-ROUTINE
+ *************************************************************************************************/
+void main (void)
+{
+	uint8_t				arrCharacter[40];
+	uint8_t				arrID_[5] = { 1, 2, 3, 4, 5 };
+	char				arrPassword_[4] = { '1', '2', '3', '4' };
+
+	/* SETUP */
+	//-Clock & Watchdog timer-//
+	clkSetup(CLK_DCO_16MHZ);						// DCO = 1MHz, Stop Watchdog timer
+	wdtSetup(WDT_OFF, WDT_TIME_0_064MS);
+
+	//-GPIO-//
+	gpioSetup(PORT1, LED_RED, LED_RED);			// Just use LED_RED notification
+
+	//-UART-//
+	uartSetup(sUartSetup.sSmclk1Mhz.sBaud9600.sIntRxdOff);
+	__delay_cycles(DL_1MS * FREQUENCY);
+
+	//-I2C-//
+	i2cSetup(I2C_MASTER, 0xFE, 10, INT_I2C_RX_ON, INT_I2C_TX_OFF, INT_I2C_STT_OFF);
+	i2cSlvAddress(0xFF);
+
+	__delay_cycles(DL_1S);
+	txdStr("Initialize System\n");
+
+	strEncoder(arrCharacter, 12, "Le Nguyen The Minh", arrID_, arrPassword_);
+//-------------------------------------------------------------------------------------------------
+	/* PROCESS */
+	while(1)
+	{
+		//i2cMstWriteArray(arrCharacter, strlen((char*)arrCharacter) + 1);
+		gpioToggle(PORT1, LED_RED);
+		__delay_cycles(DL_1S * FREQUENCY);
+	}
+}
+
+
+/**************************************************************************************************
+ *	INTERRUPT SERVICE ROUTINEs
+ *************************************************************************************************/
+/* TX */
+#pragma vector = USCIAB0TX_VECTOR
+__interrupt void USCIAB0TX_ISR(void)
+{
+}
+
+/**************************************************************************************************
+ *	END OF main.c
+ *************************************************************************************************/

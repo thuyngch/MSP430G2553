@@ -1,0 +1,112 @@
+/*
+ *	File			:	Version Progress.txt
+ *	Date created	:	04/10/2016
+ *	Author			:	Nguyen Chinh Thuy
+ *	Language		: 	None
+ *	IDE				:	Notepad++
+ *	Target object	:	Coder
+ *	Current version	:	None
+ *	Description		:	Overview of Version progress of source files in project
+ */
+/**************************************************************************************************
+ *	OVERVIEW
+ *************************************************************************************************/
+ /* 
+  * Version	: 0.0.x
+  * Resource: DS1307 (timer), 6 buttons (command), 6 7-segment LEDs (display)  
+  *	Function: Time, Alarm, Focus
+  */
+ VERSION 0_0_1;		// Construct and test each individual module
+ VERSION 0_0_2;		// Link and test interface modules
+ VERSION 0_0_3;		// Link and test time-base modules
+ VERSION 0_0_4;		// Link and test all modules together
+ VERSION 0_0_5;		// Expand and test Watchdog module to protect constinuity of chip
+ VERSION 0_0_6;		// Optimize code, convert function to bare code --> Release at this point
+ 
+ 
+ //================================================================================================
+  /* 
+  * Version	: 0.1.x
+  * Resource: DS1307 (timer), 4 buttons (command), 6 7-segment LEDs (display)  
+  *	Function: Time, Focus
+  */
+ VERSION 0_1_1;		// (Begin at Version 1.0.5) Remove Alarm function and test
+ VERSION 0_1_2;		// Optimize code, convert function to bare code --> Release at this point
+  
+ 
+ /**************************************************************************************************
+ *	DETAIL
+ *************************************************************************************************/
+/* Version 0.0.1 */
+ VERSION 0_0_1
+ {
+	 BasicOperation_0_0_1.c;
+	 
+	 Button_0_0_1.c
+	 {
+		 Use 6 normal buttons: Up, Down, Confirm, EnTime, EnAlarm, EnFocus;
+		 TEST
+		 {
+			 Reading button --> Notify by UART (Up: 1, Down: 2, Confirm: 3, EnTime: 4, EnAlarm: 5,
+													EnFocus: 6) {return 0};
+			 Anti-noise {return 0};
+		 }
+	 }
+	 
+	 Data_0_0_1.c;
+	 
+	 Display_0_0_1.c
+	 {
+		 Display 6 7-segment LEDs with support of 74HC595 and 74HC4017;
+		 TEST
+		 {
+			 Number[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9} {return 0};
+			 Toggle LEDs {return 0};
+		 }
+	 }
+	 
+	 Firmware_0_0_1.c;
+	 Power_0_0_1.c;
+	 
+	 Speaker_0_0_1.c
+	 {
+		 Notify Alarm and Focus with a speaker;
+		 TEST
+		 {
+			 Turn on 3s and turn off 5s; {return 0};
+			 Turn on 1ms and turn off 2ms; {return 0};
+		 }
+	 }
+	 
+	 Timer_0_0_1.c
+	 {
+		 Use DS1307 as a timer.
+		 TEST
+		 {
+			 Precise of interval 5 minutes {return 0};
+			 Precise of interval 1 hour {return 0};
+			 Precise of interval 1 day 5 hour {return 0};
+			 Precise of interval 5 day 12 hour {return 0};
+		 }
+	 }
+ }
+//================================================================================================
+/* Version 0.0.2 */
+//================================================================================================
+/* Version 0.0.3 */
+//================================================================================================
+/* Version 0.0.4 */
+//================================================================================================
+/* Version 0.0.5 */
+//================================================================================================
+/* Version 0.0.6 */
+//================================================================================================
+/* Version 0.1.1 */
+//================================================================================================
+/* Version 0.1.2 */
+//================================================================================================
+
+
+/**************************************************************************************************
+ *	END OF Version Progress.txt
+ *************************************************************************************************/

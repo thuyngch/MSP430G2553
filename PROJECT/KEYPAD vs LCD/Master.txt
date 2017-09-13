@@ -1,0 +1,564 @@
+/*
+ *	File			:	main.c
+ *	Date created	:	08/08/2016
+ *	Author			:	Nguyen Chinh Thuy
+ *	Tool			:	CCS6.1.2.00015 (C programming)
+ *	Current version	:	1.0.1
+ *	Description		:	Keypad 4x4
+ *	Target object	:	MSP430G2553
+ */
+/**************************************************************************************************
+ *	IMPORT
+ *************************************************************************************************/
+#include <msp430g2553.h>					// From producer
+#include <stdio.h>							// C standard
+#include "VERSION 1_2_3/CLOCK_1_2_3.h"		// Struct inside struct
+#include "VERSION 1_0_1/GPIO_1_0_1.h"		// Const parameters
+#include "VERSION 1_0_1/LCD_162_1_0_1.h"	// Normal
+
+
+/**************************************************************************************************
+ *	DEFINITIONs
+ *************************************************************************************************/
+/* Clock of system */
+#define			FREQUENCY				1		// 1MHz
+
+/* Delay interval */
+#define			DL_ANTI_NOISE			50000	// 50ms
+#define			DL_OUT					50000	// 50ms
+
+/* Keypad pins */
+#define			KEYPAD_IN				0x0F	// P2.0 -> P2.3
+#define			KEYPAD_IN_1				BIT0	// P2.0
+#define			KEYPAD_IN_2				BIT1	// P2.1
+#define			KEYPAD_IN_3				BIT2	// P2.2
+#define			KEYPAD_IN_4				BIT3	// P2.3
+
+#define			KEYPAD_OUT				0xF0	// P2.4 -> P2.7
+#define			KEYPAD_OUT_1			BIT4	// P2.4
+#define			KEYPAD_OUT_2			BIT5	// P2.5
+#define			KEYPAD_OUT_3			BIT6	// P2.6
+#define			KEYPAD_OUT_4			BIT7	// P2.7
+
+/* Firmware status register (16-bit) */
+#define			FIRM_STT_MODE_SEL		BIT0	// Mode sellect
+#define			FIRM_STT_EXIT_SEL		BIT1	// Exit sellect
+#define			FIRM_STT_CLEAR			BIT2	// Clear number
+#define			FIRM_STT_CONFIRM		BIT3	// Confirm number
+#define			FIRM_STT_GET_NUM		BIT4	// Get number
+#define			FIRM_STT_PERIOD			BIT5	// Get period
+#define			FIRM_STT_DUTY			BIT6	// Get duty
+#define			FIRM_STT_DIGIT1			BIT7	// 0 (first digit), 1 (second digit)
+#define			FIRM_STT_DIGIT2			BIT8	// 0 (third digit), 1 (fourth digit)
+#define			FIRM_STT_RESERVED_1		BIT9	// Reserved
+#define			FIRM_STT_RESERVED_2		BIT10	// Reserved
+#define			FIRM_STT_RESERVED_3		BIT11	// Reserved
+#define			FIRM_STT_RESERVED_4		BIT12	// Reserved
+#define			FIRM_STT_RESERVED_5		BIT13	// Reserved
+#define			FIRM_STT_RESERVED_6		BIT14	// Reserved
+#define			FIRM_STT_RESERVED_7		BIT15	// Reserved
+#define			FIRM_STT_DIGIT			(BIT7 + BIT8)	// For all of digits
+
+/* Firmware overflow register (16-bit) */
+#define			FIRM_OVF_DIGIT			BIT0	// Digit overflow
+#define			FIRM_OVF_CONFIRM		BIT1	// Confirm overflow
+#define			FIRM_OVF_RESERVED_1		BIT2	// Reserved
+#define			FIRM_OVF_RESERVED_2		BIT3	// Reserved
+#define			FIRM_OVF_RESERVED_3		BIT4	// Reserved
+#define			FIRM_OVF_RESERVED_4		BIT5	// Reserved
+#define			FIRM_OVF_RESERVED_5		BIT6	// Reserved
+#define			FIRM_OVF_RESERVED_6		BIT7	// Reserved
+#define			FIRM_OVF_RESERVED_7		BIT8	// Reserved
+#define			FIRM_OVF_RESERVED_8		BIT9	// Reserved
+#define			FIRM_OVF_RESERVED_9		BIT10	// Reserved
+#define			FIRM_OVF_RESERVED_10	BIT11	// Reserved
+#define			FIRM_OVF_RESERVED_11	BIT12	// Reserved
+#define			FIRM_OVF_RESERVED_12	BIT13	// Reserved
+#define			FIRM_OVF_RESERVED_13	BIT14	// Reserved
+#define			FIRM_OVF_RESERVED_14	BIT15	// Reserved
+
+/* BCD */
+#define			BCD_UNIT				0x000F	// 4 unit bits
+#define			BCD_DECI				0x00F0	// 4 decimal bits
+#define			BCD_HUND				0x0F00	// 4 hundred bits
+#define			BCD_THOU				0xF000	// 4 thousand bits
+
+
+/**************************************************************************************************
+ *	GLOBALs
+ *************************************************************************************************/
+volatile unsigned char varCount;
+unsigned char arrOut[4] = {0xEF, 0xDF, 0xBF, 0x7F};
+char strBuff[7];
+
+/* Firmware */
+unsigned int regFirmStatus;		// Firmware status register
+unsigned int regFirmOvf;		// Firmware overflow register
+unsigned int regFirmPeriod;		// Firmware period data register
+unsigned int regFirmDuty;		// Firmware duty data register
+
+unsigned char varFirmNum;		// Stores gotten number from keypad
+unsigned char varFirmMode;		// Stores gotten mode from keypad
+
+
+/**************************************************************************************************
+ *	SUB-ROUTINEs
+ *************************************************************************************************/
+/*
+ * 	Function:	testLcd
+ *	Purpose	:	Print character into LCD
+ * 	Input	:	varCharacter: Need to verify
+ * 	Output	:	None
+ */
+void testLcd (unsigned char varCharacter)
+{
+	LCD_Clear();
+	LCD_Home();
+	LCD_Display(varCharacter);
+}
+//-------------------------------------------------------------------------------------------------
+/*
+ * 	Function:	firmConfirm
+ *	Purpose	:	Confirm command
+ * 	Input	:	None
+ * 	Output	:	None
+ */
+void firmConfirm (void)
+{
+	LCD_Clear();
+	LCD_Home();
+	LCD_PrintString("    Confirm    ");
+	LCD_Goto(2,1);
+	LCD_PrintString("  completely!  ");
+}
+//-------------------------------------------------------------------------------------------------
+/*
+ * 	Function:
+ *	Purpose	:
+ * 	Input	:
+ * 	Output	:
+ */
+unsigned int bcdUnit (unsigned int varNumber)
+{
+	return (varNumber & BCD_UNIT);
+}
+//-------------------------------------------------------------------------------------------------
+/*
+ * 	Function:
+ *	Purpose	:
+ * 	Input	:
+ * 	Output	:
+ */
+unsigned int bcdDeci (unsigned int varNumber)
+{
+	return ((varNumber & BCD_DECI) >> 4);
+}
+//-------------------------------------------------------------------------------------------------
+/*
+ * 	Function:
+ *	Purpose	:
+ * 	Input	:
+ * 	Output	:
+ */
+unsigned int bcdHund (unsigned int varNumber)
+{
+	return ((varNumber & BCD_HUND) >> 8);
+}
+//-------------------------------------------------------------------------------------------------
+/*
+ * 	Function:
+ *	Purpose	:
+ * 	Input	:
+ * 	Output	:
+ */
+unsigned int bcdThou (unsigned int varNumber)
+{
+	return ((varNumber & BCD_THOU) >> 12);
+}
+//-------------------------------------------------------------------------------------------------
+
+
+/**************************************************************************************************
+ *	MAIN-ROUTINE
+ *************************************************************************************************/
+void main (void)
+{
+	/* SETUP */
+	//-CLK & WDT-//
+	clkSetup(sClkSetup.sDco1mhz.sSwdtOn);	// DCO = 1MHz, Stop watchdog timer
+
+	//-GPIO-//
+	gpioSetup(PORT2, 0xFF, KEYPAD_OUT);
+	gpioIntSetup(PORT2, KEYPAD_IN, KEYPAD_IN, INT_PORT_ON);
+
+	//-LCD-//
+	LCD_Init();
+	LCD_Clear();
+	LCD_Home();
+//-------------------------------------------------------------------------------------------------
+	/* LOOP */
+	while(1)
+	{
+		for(varCount = 0; varCount < 4; varCount++)
+		{
+			P2OUT = arrOut[varCount];
+			__delay_cycles(DL_OUT);
+		}
+	}
+}
+
+
+/**************************************************************************************************
+ *	INTERRUPT SERVICE ROUTINEs
+ *************************************************************************************************/
+/* PORT2 */
+#pragma vector = PORT2_VECTOR
+__interrupt void port2Isr (void)
+{
+	//-Get keypad-//
+	switch (P2IFG & KEYPAD_IN)
+	{
+		case KEYPAD_IN_1:
+		{
+			switch (varCount)
+			{
+				case 0:					// 1
+					regFirmStatus |= FIRM_STT_GET_NUM;
+					varFirmNum = 1;
+					break;
+				case 1:					// 2
+					regFirmStatus |= FIRM_STT_GET_NUM;
+					varFirmNum = 2;
+					break;
+				case 2:					// 3
+					regFirmStatus |= FIRM_STT_GET_NUM;
+					varFirmNum = 3;
+					break;
+				case 3:					// A
+					regFirmStatus |= FIRM_STT_MODE_SEL;
+					regFirmStatus |= FIRM_STT_PERIOD;
+					regFirmStatus &= ~FIRM_STT_EXIT_SEL;
+					varFirmMode = 'A';
+					break;
+				default:
+					break;
+			}
+			break;
+		}
+		case KEYPAD_IN_2:
+		{
+			switch (varCount)
+			{
+				case 0:					// 4
+					regFirmStatus |= FIRM_STT_GET_NUM;
+					varFirmNum = 4;
+					break;
+				case 1:					// 5
+					regFirmStatus |= FIRM_STT_GET_NUM;
+					varFirmNum = 5;
+					break;
+				case 2:					// 6
+					regFirmStatus |= FIRM_STT_GET_NUM;
+					varFirmNum = 6;
+					break;
+				case 3:					// B
+					regFirmStatus |= FIRM_STT_MODE_SEL;
+					regFirmStatus |= FIRM_STT_PERIOD;
+					regFirmStatus &= ~FIRM_STT_EXIT_SEL;
+					varFirmMode = 'B';
+					break;
+				default:
+					break;
+			}
+			break;
+		}
+		case KEYPAD_IN_3:
+		{
+			switch (varCount)
+			{
+				case 0:					// 7
+					regFirmStatus |= FIRM_STT_GET_NUM;
+					varFirmNum = 7;
+					break;
+				case 1:					// 8
+					regFirmStatus |= FIRM_STT_GET_NUM;
+					varFirmNum = 8;
+					break;
+				case 2:					// 9
+					regFirmStatus |= FIRM_STT_GET_NUM;
+					varFirmNum = 9;
+					break;
+				case 3:					// C
+					regFirmStatus |= FIRM_STT_MODE_SEL;
+					regFirmStatus |= FIRM_STT_PERIOD;
+					regFirmStatus &= ~FIRM_STT_EXIT_SEL;
+					varFirmMode = 'C';
+					break;
+				default:
+					break;
+			}
+			break;
+		}
+		case KEYPAD_IN_4:
+		{
+			switch (varCount)
+			{
+				case 0:					// *
+					regFirmStatus |= FIRM_STT_CLEAR;
+					regFirmStatus &= ~FIRM_STT_GET_NUM;
+					break;
+				case 1:					// 0
+					regFirmStatus |= FIRM_STT_GET_NUM;
+					varFirmNum = 0;
+					break;
+				case 2:					// #
+					regFirmStatus |= FIRM_STT_CONFIRM;
+					regFirmStatus &= ~FIRM_STT_GET_NUM;
+					break;
+				case 3:					// D
+					regFirmStatus |= FIRM_STT_EXIT_SEL;
+					break;
+				default:
+					break;
+			}
+			break;
+		}
+		default:
+//			sprintf(strBuff, "%x", P2IFG);
+			break;
+	}
+	//-Process-//
+	if(regFirmStatus & FIRM_STT_MODE_SEL)		// A || B || C is pressed
+	{
+		LCD_Clear();
+		LCD_Home();
+		LCD_PrintString("Mode "); LCD_Display(varFirmMode); LCD_Display(':');
+		if(regFirmStatus & FIRM_STT_PERIOD)			// Input for Period
+		{
+			LCD_Goto(2, 2);
+			LCD_PrintString("Period=");
+			if(regFirmStatus & FIRM_STT_GET_NUM)		// Number is pressed
+			{
+				regFirmStatus &= ~FIRM_STT_CLEAR;
+				regFirmStatus &= ~FIRM_STT_CONFIRM;
+				if(((regFirmStatus & FIRM_STT_DIGIT) >> 7) == 0)	// First digit
+				{
+					regFirmPeriod = ((varFirmNum & 0x0F) << 12);	// Storing
+					LCD_Display(varFirmNum + 48);		// Print first digit
+					regFirmStatus = ((regFirmStatus & (~FIRM_STT_DIGIT)) | (1<<7));	// Turn to second digit
+					regFirmOvf &= ~FIRM_OVF_DIGIT;		// Turn off digit Ovf
+				}
+				else if(((regFirmStatus & FIRM_STT_DIGIT) >> 7) == 1)	// Second digit
+				{
+					LCD_Display((unsigned char)bcdThou(regFirmPeriod) + 48);	// Print first digit
+					regFirmPeriod |= ((varFirmNum & 0x0F) << 8);	// Storing
+					LCD_Display(varFirmNum + 48);	// Print second digit
+					regFirmStatus = ((regFirmStatus & (~FIRM_STT_DIGIT)) | (2<<7));	// Turn to third digit
+					regFirmOvf &= ~FIRM_OVF_DIGIT;		// Turn off digit Ovf
+				}
+				else if(((regFirmStatus & FIRM_STT_DIGIT) >> 7) == 2)	// Third digit
+				{
+					LCD_Display((unsigned char)bcdThou(regFirmPeriod) + 48);	// Print first digit
+					LCD_Display((unsigned char)bcdHund(regFirmPeriod) + 48);	// Print second digit
+					regFirmPeriod |= ((varFirmNum & 0x0F) << 4);	// Storing
+					LCD_Display(varFirmNum + 48);	// Print third digit
+					regFirmStatus = ((regFirmStatus & (~FIRM_STT_DIGIT)) | (3<<7));	// Turn to fourth digit
+					regFirmOvf &= ~FIRM_OVF_DIGIT;		// Turn off digit Ovf
+				}
+				else			// Fourth digit
+				{
+					if(!(regFirmOvf & FIRM_OVF_DIGIT))		// No digit overflow
+					{
+						LCD_Display((unsigned char)bcdThou(regFirmPeriod) + 48);	// Print first digit
+						LCD_Display((unsigned char)bcdHund(regFirmPeriod) + 48);	// Print second digit
+						LCD_Display((unsigned char)bcdDeci(regFirmPeriod) + 48);	// Print third digit
+						regFirmPeriod |= (varFirmNum & 0x0F);	// Storing
+						LCD_Display(varFirmNum + 48);	// Print fourth digit
+						regFirmOvf |= FIRM_OVF_DIGIT;	// Turn on digit Ovf
+					}
+					else		// Notify digit overflow at here
+					{
+						LCD_Clear();
+						LCD_Home();
+						LCD_PrintString("Digit Overflow?!");
+						__delay_cycles(DL_1S);
+						LCD_Clear();
+						LCD_Home();
+						LCD_PrintString("Mode "); LCD_Display(varFirmMode); LCD_Display(':');
+						LCD_Goto(2, 2);
+						LCD_PrintString("Period=");
+						LCD_Display((unsigned char)bcdThou(regFirmPeriod) + 48);
+						LCD_Display((unsigned char)bcdHund(regFirmPeriod) + 48);
+						LCD_Display((unsigned char)bcdDeci(regFirmPeriod) + 48);
+						LCD_Display((unsigned char)bcdUnit(regFirmPeriod) + 48);
+					}
+				}
+			}
+			if(regFirmStatus & FIRM_STT_CLEAR)		// * (Clear) is pressed
+			{
+				regFirmPeriod = 0;
+				varFirmNum = 0;
+				regFirmStatus &= ~FIRM_STT_DIGIT;
+				regFirmStatus &= ~FIRM_STT_GET_NUM;
+				regFirmStatus &= ~FIRM_STT_CONFIRM;
+				LCD_Clear();
+				LCD_Home();
+				LCD_PrintString("Mode "); LCD_Display(varFirmMode); LCD_Display(':');
+				LCD_Goto(2, 2);
+				LCD_PrintString("Period=");
+			}
+			if(regFirmStatus & FIRM_STT_CONFIRM)		// # (Confirm) is pressed
+			{
+				if(regFirmPeriod != 0)			// Period is not equal 0 -> Pass to Duty
+				{
+					regFirmStatus &= ~FIRM_STT_GET_NUM;
+					regFirmStatus &= ~FIRM_STT_CONFIRM;
+					regFirmStatus &= ~FIRM_STT_DIGIT;
+					regFirmStatus &= ~FIRM_STT_PERIOD;
+					regFirmStatus |=  FIRM_STT_DUTY;
+					LCD_Clear();
+					LCD_Home();
+					LCD_PrintString("Mode "); LCD_Display(varFirmMode); LCD_Display(':');
+				}
+				else		// Notify error (Period == 0) at here and request reinputting
+				{
+					regFirmStatus &= ~FIRM_STT_GET_NUM;
+					regFirmStatus &= ~FIRM_STT_DIGIT1;
+					LCD_Clear();
+					LCD_Home();
+					LCD_PrintString("Period=0?!");
+					__delay_cycles(DL_1S);
+					LCD_Clear();
+					LCD_Home();
+					LCD_PrintString("Mode "); LCD_Display(varFirmMode); LCD_Display(':');
+					LCD_Goto(2, 2);
+					LCD_PrintString("Period=");
+				}
+			}
+		}
+		if(regFirmStatus & FIRM_STT_DUTY)		// Input for Duty
+		{
+			LCD_Goto(2, 2);
+			LCD_PrintString("Duty=");
+			if(regFirmStatus & FIRM_STT_GET_NUM)		// Number is pressed
+			{
+				regFirmStatus &= ~FIRM_STT_CLEAR;
+				regFirmStatus &= ~FIRM_STT_CONFIRM;
+				if(((regFirmStatus & FIRM_STT_DIGIT) >> 7) == 0)	// First digit
+				{
+					regFirmDuty = ((varFirmNum & 0x0F) << 12);	// Storing
+					LCD_Display(varFirmNum + 48);		// Print first digit
+					regFirmStatus = ((regFirmStatus & (~FIRM_STT_DIGIT)) | (1<<7));	// Turn to second digit
+					regFirmOvf &= ~FIRM_OVF_DIGIT;		// Turn off digit Ovf
+				}
+				else if(((regFirmStatus & FIRM_STT_DIGIT) >> 7) == 1)	// Second digit
+				{
+					LCD_Display((unsigned char)bcdThou(regFirmDuty) + 48);	// Print first digit
+					regFirmDuty |= ((varFirmNum & 0x0F) << 8);	// Storing
+					LCD_Display(varFirmNum + 48);	// Print second digit
+					regFirmStatus = ((regFirmStatus & (~FIRM_STT_DIGIT)) | (2<<7));	// Turn to third digit
+					regFirmOvf &= ~FIRM_OVF_DIGIT;		// Turn off digit Ovf
+				}
+				else if(((regFirmStatus & FIRM_STT_DIGIT) >> 7) == 2)	// Third digit
+				{
+					LCD_Display((unsigned char)bcdThou(regFirmDuty) + 48);	// Print first digit
+					LCD_Display((unsigned char)bcdHund(regFirmDuty) + 48);	// Print second digit
+					regFirmDuty |= ((varFirmNum & 0x0F) << 4);	// Storing
+					LCD_Display(varFirmNum + 48);	// Print third digit
+					regFirmStatus = ((regFirmStatus & (~FIRM_STT_DIGIT)) | (3<<7));	// Turn to fourth digit
+					regFirmOvf &= ~FIRM_OVF_DIGIT;		// Turn off digit Ovf
+				}
+				else			// Fourth digit
+				{
+					if(!(regFirmOvf & FIRM_OVF_DIGIT))		// No digit overflow
+					{
+						LCD_Display((unsigned char)bcdThou(regFirmDuty) + 48);	// Print first digit
+						LCD_Display((unsigned char)bcdHund(regFirmDuty) + 48);	// Print second digit
+						LCD_Display((unsigned char)bcdDeci(regFirmDuty) + 48);	// Print third digit
+						regFirmDuty |= (varFirmNum & 0x0F);	// Storing
+						LCD_Display(varFirmNum + 48);	// Print fourth digit
+						regFirmOvf |= FIRM_OVF_DIGIT;	// Turn on digit Ovf
+					}
+					else		// Notify digit overflow at here
+					{
+						LCD_Clear();
+						LCD_Home();
+						LCD_PrintString("Digit Overflow?!");
+						__delay_cycles(DL_1S);
+						LCD_Clear();
+						LCD_Home();
+						LCD_PrintString("Mode "); LCD_Display(varFirmMode); LCD_Display(':');
+						LCD_Goto(2, 2);
+						LCD_PrintString("Duty=");
+						LCD_Display((unsigned char)bcdThou(regFirmDuty) + 48);
+						LCD_Display((unsigned char)bcdHund(regFirmDuty) + 48);
+						LCD_Display((unsigned char)bcdDeci(regFirmDuty) + 48);
+						LCD_Display((unsigned char)bcdUnit(regFirmDuty) + 48);
+					}
+				}
+			}
+			if(regFirmStatus & FIRM_STT_CLEAR)		// * (Clear) is pressed
+			{
+				regFirmDuty = 0;
+				varFirmNum = 0;
+				regFirmStatus &= ~FIRM_STT_DIGIT;
+				regFirmStatus &= ~FIRM_STT_GET_NUM;
+				regFirmStatus &= ~FIRM_STT_CONFIRM;
+				LCD_Clear();
+				LCD_Home();
+				LCD_PrintString("Mode "); LCD_Display(varFirmMode); LCD_Display(':');
+				LCD_Goto(2, 2);
+				LCD_PrintString("Duty=");
+			}
+			if(regFirmStatus & FIRM_STT_CONFIRM)		// # (Confirm) is pressed
+			{
+				if(regFirmDuty != 0)			// Duty is not equal 0 -> Pass to next task
+				{
+					regFirmStatus &= ~FIRM_STT_GET_NUM;
+					regFirmStatus &= ~FIRM_STT_CONFIRM;
+					regFirmStatus &= ~FIRM_STT_DIGIT;
+					regFirmStatus &= ~FIRM_STT_DUTY;
+					regFirmOvf 	  |=  FIRM_OVF_CONFIRM;
+				}
+				else		// Notify error (Duty == 0) at here and request reinputting
+				{
+					regFirmStatus &= ~FIRM_STT_GET_NUM;
+					regFirmStatus &= ~FIRM_STT_DIGIT;
+					LCD_Clear();
+					LCD_Home();
+					LCD_PrintString("Duty=0?!");
+					__delay_cycles(DL_1S);
+					LCD_Clear();
+					LCD_Home();
+					LCD_PrintString("Mode "); LCD_Display(varFirmMode); LCD_Display(':');
+					LCD_Goto(2, 2);
+					LCD_PrintString("Duty=");
+				}
+			}
+		}
+	}
+	if(regFirmStatus & FIRM_STT_EXIT_SEL)				// D is pressed
+	{
+		regFirmStatus = FIRM_STT_EXIT_SEL;
+		regFirmOvf = 0;
+		regFirmPeriod = 0;
+		regFirmDuty = 0;
+		varFirmMode = 0;
+		varFirmNum = 0;
+		LCD_Clear();
+		LCD_Home();
+		LCD_PrintString("Select a mode...");
+	}
+	if(regFirmOvf & FIRM_OVF_CONFIRM)					// If confirm all of Period and Duty
+	{
+		firmConfirm();	// Implement command
+	}
+	__delay_cycles(DL_ANTI_NOISE * FREQUENCY);
+	P2IFG  = 0;
+}
+//-------------------------------------------------------------------------------------------------
+
+
+/**************************************************************************************************
+ *	END OF main.c
+ *************************************************************************************************/

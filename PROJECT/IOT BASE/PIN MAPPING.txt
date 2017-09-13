@@ -1,0 +1,57 @@
+#define	PIN_LED_01						BIT0	// P1.0	(RED)
+#define	PIN_SPEAKER						BIT1	// P1.1
+#define	PIN_TOUCH_01					BIT2	// P1.2
+#define	PIN_TOUCH_02					BIT3	// P1.3
+#define	PIN_TOUCH_03					BIT4	// P1.4
+#define	PIN_TOUCH_04					BIT5	// P1.5
+#define	PIN_I2C_SDA						BIT6	// P1.6	(Fixed)
+#define	PIN_I2C_SCL						BIT7	// P1.7	(Fixed)
+
+#define	PIN_TOUCH_05					BIT0	// P2.0
+#define	PIN_TOUCH_06					BIT1	// P2.1
+#define	PIN_TOUCH_07					BIT2	// P2.2
+#define	PIN_TOUCH_08					BIT3	// P2.3
+#define	PIN_TOUCH_09					BIT4	// P2.4
+#define	PIN_TOUCH_00					BIT5	// P2.5
+#define	PIN_TOUCH_CFM					BIT6	// P2.6
+#define	PIN_TOUCH_CLR					BIT7	// P2.7
+
+//////////////////////////////////////////////////////////////////////
+
+#define	PIN_RFID_SS						BIT0	// P1.0
+#define	PIN_RFID_MISO					BIT1	// P1.1	(Fixed)
+#define	PIN_RFID_MOSI					BIT2	// P1.2	(Fixed)
+#define	PIN_RFID_RST					BIT3	// P1.3
+#define	PIN_RFID_CLK					BIT4	// P1.4	(Fixed)
+#define	PIN_LED_RFID					BIT5	// P1.5	(RED)
+#define	PIN_I2C_SCL						BIT6	// P1.6	(Fixed)
+#define	PIN_I2C_SDA						BIT7	// P1.7	(Fixed)
+
+#define	PIN_BTN_CLOSE					BIT0	// P2.0
+#define	PIN_LED_BTN						BIT1	// P2.1	(GREEN)
+#define	PIN_LCD_EN						BIT2	// P2.2
+#define	PIN_LCD_RS						BIT3	// P2.3
+#define	PIN_LCD_D4						BIT4	// P2.4	(Fixed)
+#define	PIN_LCD_D5						BIT5	// P2.5	(Fixed)
+#define	PIN_LCD_D6						BIT6	// P2.6	(Fixed)
+#define	PIN_LCD_D7						BIT7	// P2.7	(Fixed)
+
+//////////////////////////////////////////////////////////////////////
+
+#define	PIN_WIFI_LED					BIT0	// P1.0
+#define	PIN_WIFI_RXD					BIT1	// P1.1	(Fixed)
+#define	PIN_WIFI_TXD					BIT2	// P1.2	(Fixed)
+#define	PIN_WIFI_RST					BIT3	// P1.3
+#define	PIN_WIFI_EN						BIT4	// P1.4
+#define	PIN_RESERVED_01					BIT5	// P1.5
+#define	PIN_I2C_SCL						BIT6	// P1.6	(Fixed)
+#define	PIN_I2C_SDA						BIT7	// P1.7	(Fixed)
+
+#define	PIN_SERVO_DIR					BIT0	// P2.0
+#define	PIN_SERVO_PWM					BIT1	// P2.1	(Fixed)
+#define	PIN_RESERVED_02					BIT2	// P2.2
+#define	PIN_RESERVED_03					BIT3	// P2.3
+#define	PIN_RESERVED_04					BIT4	// P2.4
+#define	PIN_RESERVED_05					BIT5	// P2.5
+#define	PIN_RESERVED_06					BIT6	// P2.6
+#define	PIN_RESERVED_07					BIT7	// P2.7

@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+	<name>IOT BASE</name>
+	<comment></comment>
+	<projects>
+	</projects>
+	<buildSpec>
+		<buildCommand>
+			<name>org.eclipse.cdt.managedbuilder.core.genmakebuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+		<buildCommand>
+			<name>org.eclipse.cdt.managedbuilder.core.ScannerConfigBuilder</name>
+			<triggers>full,incremental,</triggers>
+			<arguments>
+			</arguments>
+		</buildCommand>
+	</buildSpec>
+	<natures>
+		<nature>com.ti.ccstudio.core.ccsNature</nature>
+		<nature>org.eclipse.cdt.core.cnature</nature>
+		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
+		<nature>org.eclipse.cdt.core.ccnature</nature>
+		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
+	</natures>
+	<linkedResources>
+		<link>
+			<name>Register-Base Files/CAPACITIVE_1_0_1.c</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/LIBRARY/VERSION%201_0_1/CAPACITIVE_1_0_1.c</locationURI>
+		</link>
+		<link>
+			<name>Register-Base Files/CLOCK_1_0_1.c</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/LIBRARY/VERSION%201_0_1/CLOCK_1_0_1.c</locationURI>
+		</link>
+		<link>
+			<name>Register-Base Files/CTS_HAL.c</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/LIBRARY/VERSION%201_0_1/Capacitive%20Touch/CTS_HAL.c</locationURI>
+		</link>
+		<link>
+			<name>Register-Base Files/CTS_Layer.c</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/LIBRARY/VERSION%201_0_1/Capacitive%20Touch/CTS_Layer.c</locationURI>
+		</link>
+		<link>
+			<name>Register-Base Files/ESP8266_1_0_1.c</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/LIBRARY/VERSION%201_0_1/ESP8266_1_0_1.c</locationURI>
+		</link>
+		<link>
+			<name>Register-Base Files/FLASH_1_0_1.c</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/LIBRARY/VERSION%201_0_1/FLASH_1_0_1.c</locationURI>
+		</link>
+		<link>
+			<name>Register-Base Files/GPIO_1_0_1.c</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/LIBRARY/VERSION%201_0_1/GPIO_1_0_1.c</locationURI>
+		</link>
+		<link>
+			<name>Register-Base Files/LCD_162_1_0_1.c</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/LIBRARY/VERSION%201_0_1/LCD_162_1_0_1.c</locationURI>
+		</link>
+		<link>
+			<name>Register-Base Files/MFRC522_1_0_1.c</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/LIBRARY/VERSION%201_0_1/MFRC522_1_0_1.c</locationURI>
+		</link>
+		<link>
+			<name>Register-Base Files/TIMERA_1_0_1.c</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/LIBRARY/VERSION%201_0_1/TIMERA_1_0_1.c</locationURI>
+		</link>
+		<link>
+			<name>Register-Base Files/UCSI_I2C_2_0_1.c</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/LIBRARY/VERSION%202_0_1/UCSI_I2C_2_0_1.c</locationURI>
+		</link>
+		<link>
+			<name>Register-Base Files/USCI_SPI_1_0_1.c</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/LIBRARY/VERSION%201_0_1/USCI_SPI_1_0_1.c</locationURI>
+		</link>
+		<link>
+			<name>Register-Base Files/USCI_UART_1_0_1.c</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/LIBRARY/VERSION%201_0_1/USCI_UART_1_0_1.c</locationURI>
+		</link>
+		<link>
+			<name>Register-Base Files/WATCHDOG_1_0_1.c</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/LIBRARY/VERSION%201_0_1/WATCHDOG_1_0_1.c</locationURI>
+		</link>
+	</linkedResources>
+</projectDescription>

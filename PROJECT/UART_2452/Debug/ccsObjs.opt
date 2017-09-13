@@ -1,0 +1,1 @@
+"./CommunicationGPIO.obj" "./main.obj" "../lnk_msp430g2452.cmd" -l"libc.a" 

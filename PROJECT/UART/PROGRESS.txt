@@ -1,0 +1,31 @@
+	1. Sent a byte of data by GPIO following UART standard.
+	2. Sent a string of data by GPIO following UART standard.
+	3. Get a byte of data by GPIO following UART standard.
+	4. Get a string of data by GPIO following UART standard.
+	5. Trasmit 2 bytes (1 for address and 1 for command/data).
+	
+--------------------------------------------------------------------------------------------------
+	* Get a byte of data:
+		- Structure of a data byte: 1 start bit, 8 data bit, and 1 stop bit:
+						0.****.****.1
+		- P1.1 is input pin to get data.
+		- If P1.1 == 0: read P1IN every BAURATE cycles (BAURATE = 104) and store
+						in a buff array[8].
+		- After get enough 8 data bits, push data in the buff array to another array.
+				(Using Visual Studio for testing)
+		- Delay 10ms for the next get data.
+		- After successing, reduce 10ms interval.
+		- Move uartGetChar into interrupt.
+		
+	* Transmit 2 bytes (1 for address and 1 for command/data):
+		- First byte: Address(2 bits) + Password (6 bits):
+			+ Slave 1: High(00_101010)Low.
+			+ Slave 2: High(01_101100)Low.
+			+ Slave 3: High(10_111001)Low.
+			+ Slave 4: High(11_001110)Low.
+			* Considering to password: Add a special feature:
+				If password is wrong 5 times, slave chip will set GPIO output for all pins,
+				set all  ,as well as well as set Low Power Mode 4.
+				After success, explore about erase data in chip.
+				
+				

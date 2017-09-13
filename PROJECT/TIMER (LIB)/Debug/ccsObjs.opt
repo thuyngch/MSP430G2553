@@ -1,0 +1,1 @@
+"./CLOCK_1_0_1.obj" "./GPIO_1_0_1.obj" "./TIMERA_1_0_1.obj" "./USCI_UART_1_0_1.obj" "./main.obj" "../lnk_msp430g2553.cmd" -l"libc.a" 

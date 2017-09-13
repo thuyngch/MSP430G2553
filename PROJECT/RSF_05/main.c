@@ -1,0 +1,168 @@
+/*
+ * 	File			:	main.c
+ * 	Author			:	Nguyen Chinh Thuy
+ *	Date created	:	28/05/2016
+ *	Tool			: 	CCS6.1.2.00015
+ *	Current version	:	1.0.1
+ *	Description		:	Construct SRF-05 module
+ */
+/****************************************************************************************
+ *	IMPORT
+ ***************************************************************************************/
+#include <msp430.h>
+#include "VERSION 1_0_1\USCI_UART_1_0_1.h"
+#include "VERSION 1_0_1\GPIO_1_0_1.h"
+
+
+/****************************************************************************************
+ *	DEFINITIONs
+ ***************************************************************************************/
+/* Pins */
+#define		ECHO		BIT1
+#define		TRIGGER		BIT4
+
+/* Variables */
+unsigned char varData;
+unsigned int varInterval;
+unsigned int varDistance;
+unsigned char strString[14];
+
+unsigned char Count, First_Time;
+unsigned int REdge1, REdge2, FEdge;
+
+/* External */
+extern const uart_Setup sUartSetup[8];
+extern const gpio_Setup sGpioSet = {PORT1, LED_RED + LED_GREEN + TRIGGER, LED_RED + LED_GREEN + TRIGGER};
+
+
+/****************************************************************************************
+ *	SUB-ROUTINEs
+ ***************************************************************************************/
+void trigger (void)
+{
+	P1OUT |= TRIGGER;
+	__delay_cycles(10);
+	P1OUT &= ~TRIGGER;
+}
+
+unsigned int distance (unsigned int varInterval)
+{
+	return (unsigned int)(varInterval / 56);
+}
+
+void toString (unsigned int varUint, unsigned char strString[])
+{
+	if (varUint > 300)
+	{
+		strString = "Exceed limit!";
+	}
+	else
+	{
+		unsigned int varA, varB, varC;
+		varA = (unsigned int)varUint/100;
+		varB = (unsigned int)(varUint - varA*100)/10;
+		varC = varUint - varA*100 - varB*10;
+		strString[0] = (unsigned char)(varA + 48);
+		strString[1] = (unsigned char)(varB + 48);
+		strString[2] = (unsigned char)(varC + 48);
+		strString[3] = 0;
+	}
+}
+
+
+
+/****************************************************************************************
+ *	MAIN-ROUTINE
+ ***************************************************************************************/
+int main (void)
+{
+	/* SETUP */
+	WDTCTL   = WDTPW + WDTHOLD;
+
+	// DCO_CLK(1MHz) //
+	BCSCTL1  = CALBC1_1MHZ;
+	DCOCTL   = CALDCO_1MHZ;
+
+	// UART //
+	uartSetup(sUartSetup[1]);
+
+	// GPIO //
+	gpioSetup(sGpioSet);
+	ledOn(LED_RED);
+
+	// Continuous mode, Capture 2 edges //
+	TA1CTL    = TASSEL_2 + MC_2;
+	TA1CCTL1 |= CM_3 + CCIS_0 + CAP + CCIE;
+	TA1R      = 0;
+	P2SEL    |= ECHO;
+	P2SEL2   &= ~ECHO;
+	P2DIR    &= ~ECHO;
+	TA0CCTL1 &= ~COV;
+
+	// Prepare //
+	__delay_cycles(1000000);
+	_BIS_SR(GIE);
+	ledOff(LED_RED);
+
+
+	/* PROCESS */
+	while(1)
+	{
+		trigger();
+		__delay_cycles(500000);
+	}
+	return 1;
+}
+
+
+/****************************************************************************************
+ *	INTERRUPT SERVICE ROUTINEs
+ ***************************************************************************************/
+/* RXD */
+//#pragma vector = USCIAB0RX_VECTOR
+//__interrupt void rxdInt (void)
+//{
+//	varData = rxdChar();
+//	txdChar(varData);
+//}
+
+/* Capture */
+#pragma vector=TIMER1_A1_VECTOR
+__interrupt void TA1IV_Interrupt (void)
+{
+	  switch(__even_in_range(TA1IV,0x0A))
+	  {
+	      case  TA1IV_NONE:
+	    	  {
+	    		  break;              // Vector 0:  No interrupt
+	    	  }
+	      case  TA1IV_TACCR1:
+			  {
+				// Rising edge //
+				if (TA1CCTL1 & CCI)
+				{
+					TA1R = 0;
+				}
+				// Falling edge //
+				else
+				{
+					varInterval = TA1CCR1;
+					varDistance = distance(varInterval);
+					toString(varDistance, strString);
+					txdStr("Distance: ");
+					txdStr(strString);
+					txdChar('\n');
+				}
+				break;
+			  }
+	      default:
+	    	  {
+	    		  break;
+	    	  }
+	  }
+}
+
+
+/****************************************************************************************
+ *	END OF main.c
+ ***************************************************************************************/

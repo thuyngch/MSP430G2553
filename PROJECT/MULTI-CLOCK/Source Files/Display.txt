@@ -1,0 +1,114 @@
+/*
+ *	File			:	Data.c
+ *	Date created	:	16/9/2016
+ *	Author			:	Nguyen Chinh Thuy
+ *	Language		: 	C
+ *	IDE				:	CCS6.1.2.00015
+ *	Target object	:	MSP430G2553
+ *	Current version	:	1.0.1
+ *	Description		:	Source for Data
+ */
+/**************************************************************************************************
+ *	INCLUDEs
+ *************************************************************************************************/
+#include "Header.h"
+#include "Display.h"
+
+/**************************************************************************************************
+ *	PUBLICs
+ *************************************************************************************************/
+
+/**************************************************************************************************
+ *	PRIVATEs
+ *************************************************************************************************/
+
+// Describe each digit in terms of display segments
+// 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, B, C, D, E, F
+const char num7Seg[17] = { 0b11111100, 0b01100000, 0b11011010, 0b11110010,
+		0b01100110, 0b10110110, 0b10111110, 0b11100000, 0b11111110, 0b11100110,
+		0b11101110, 0b00111110, 0b10011100, 0b01111010, 0b10011110, 0b10001110,
+		0b00000000		//turn off number :V
+		};
+
+/**************************************************************************************************
+ *	FUNCTIONs
+ *************************************************************************************************/
+/*
+ *	Function: seg7_
+ *	Purpose	: Display a number in segment throught shirft register
+ *	Input	: Number
+ *	Output	: None
+ */
+void seg7_(int a) {
+	unsigned char i = 0;
+	unsigned char temp = 0;
+	unsigned char num = ~num7Seg[a];
+
+	P1OUT &= ~(PIN_595_CLK + PIN_595_LATCH + PIN_4017);
+	
+	for (i = 0; i < 8; i++) {
+		temp = num & (0x01 << i);
+		if (temp) {
+			P1OUT |= PIN_595_DATA;
+		} else {
+			P1OUT &= ~PIN_595_DATA;
+		}
+		pulse(PIN_595_CLK);
+	}
+	pulse(PIN_595_LATCH);
+}
+
+
+//-------------------------------------------------------------------------------------------------
+/*	Function: disTime7seg
+ *	Purpose	: Display TIME through SEG7
+ *	Input	: system_Time
+ *	Output	: hh mm ss \13
+ */
+void disTime7seg(system_Time t) {
+	P1OUT &= ~PIN_4017;
+	seg7_(t.varHour >> 8);
+	pulse(PIN_4017);
+	seg7_(t.varHour & 0xFF);
+	pulse(PIN_4017);
+	seg7_(t.varMinute >> 8);
+	pulse(PIN_4017);
+	seg7_(t.varMinute & 0xFF);
+	pulse(PIN_4017);
+	seg7_(t.varSecond >> 8);
+	pulse(PIN_4017);
+	seg7_(t.varSecond & 0xFF);
+	pulse(PIN_4017);
+}
+
+
+//-------------------------------------------------------------------------------------------------
+/*
+ *	Function: pulse
+ *	Purpose	: Create __||__ -> latch IC
+ *	Input	: PIN
+ *	Output	: UART -> Terminal TIME	-> hh mm ss \13
+ */
+void pulse(int pin) {
+	P1OUT |= pin;
+	asm("NOP");
+	P1OUT &= ~pin;
+}
+
+
+//-------------------------------------------------------------------------------------------------
+/*	Display TERMINAL throught UART -> P1.1*/
+/*
+ *	Function: screenUART
+ *	Purpose	: Display TIME through TERMINAL
+ *	Input	: system_Time
+ *	Output	: UART -> Terminal TIME	-> hh mm ss \13
+ */
+void txTime(system_Time t) {
+
+}
+//-------------------------------------------------------------------------------------------------
+
+/**************************************************************************************************
+ *	END OF Data.c
+ *************************************************************************************************/

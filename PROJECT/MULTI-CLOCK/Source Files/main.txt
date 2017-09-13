@@ -1,0 +1,148 @@
+/*
+ *	File			:	main.c
+ *	Date created	:	16/9/2016
+ *	Author			:	Nguyen Chinh Thuy
+ *	Language		: 	C
+ *	IDE				:	CCS6.1.2.00015
+ *	Target object	:	MSP430G2553
+ *	Current version	:	0.0.101
+ *	Description		:	Main source of Multi-Clock
+ */
+
+//#define TEST_UART			// Use for testing modules but UART
+#define USE_DS1307			// Use DS1307 to count time
+/**************************************************************************************************
+ *	INCLUDEs
+ *************************************************************************************************/
+#include "Source Files/VERSION 0_0_101/Header_0_0_101.h"
+
+
+/**************************************************************************************************
+ *	GLOBALs
+ *************************************************************************************************/
+volatile unsigned char varTimerCount = 0;		// Used in TIMERA0_A1 ISR
+
+
+/**************************************************************************************************
+ *	MAIN
+ *************************************************************************************************/
+void main (void)
+{
+	/* SETUP */
+	//-CLOCK-//
+	clkSetup(CLK_DCO_8MHZ);
+
+	//-WDT-//
+	wdtSetup(WDT_OFF, WDT_TIME_32MS);
+
+	//-GPIO-//
+	gpioSetup(PORT1, PIN_GPIO_PORT1, PIN_GPIO_OUT_PORT1);					// Output
+	gpioSetup(PORT2, PIN_GPIO_PORT2, PIN_GPIO_OUT_PORT2);					// Output
+	gpioIntSetup(PORT2, PIN_GPIO_IN_PORT2, PIN_GPIO_IN_PORT2, INT_PORT_ON);	// Input
+	ic74HC595Setup(PIN_595_DATA, PIN_595_CLK, PIN_595_LATCH);				// 74HC595
+
+	//-FLASH-//
+	//flashSetup(CLK_DCO_1MHZ);
+
+	//-DATA-//
+	//dataLoad(ePageAlarm);
+	//dataLoad(ePageFocus);
+
+#ifdef USE_DS1307
+	//-TIMERA0-//
+	timerASetup(TIMER_A_0, MODE_UP, ID_3, INT_OVF_ON, 0, TIMERA0_PERIOD);	// Overflow every 500ms
+#endif /* USE_DS1307 */
+
+#ifdef TEST_UART
+	//-UART-//
+	uartSetup(CLKS_SMCLK_8MHZ, BAUD_9600, INT_RXD_OFF);
+	__delay_cycles(DL_50MS);
+#endif /* TEST_UART */
+
+#ifdef USE_DS1307
+	//-I2C-//
+	i2cSetup(I2C_MASTER, DS1307_ADDRESS);
+
+	//-DS1307-//
+	ds1307Setup(8, 47, 40, 1, 16, 10, 16);		// Initial time: 00:00:00 Sat 15/10/2016
+#endif /* USE_DS1307 */
+
+#ifdef TEST_UART
+	//-Notify System-//
+	__delay_cycles(DL_100MS);
+	txdStr("Initial System\n");
+#endif /* TEST_UART */
+//-------------------------------------------------------------------------------------------------
+	/* PROCESS */
+	while(1)
+	{
+		switch (sStatusRegister.bPage)
+		{
+			case ePageNormal:
+				firmPageNormal();
+//				break;
+//			case ePageTime:
+//				//-Toogle LED at here-//
+//				break;
+		}
+	}
+}
+
+
+/**************************************************************************************************
+ *	INTERRUPT SERVICE ROUTINEs
+ *************************************************************************************************/
+/* PORT2 */
+#pragma vector = PORT2_VECTOR
+__interrupt void PORT2_ISR (void)
+{
+	//-Identify whether button is pressed-//
+	buttonIdentify();
+
+	//-Processing-//
+	if		(sStatusRegister.bPage == ePageTime)
+	{
+		firmPageTime();
+	}
+	else if	(sStatusRegister.bPage == ePageAlarm)
+	{
+		firmPageAlarm();
+	}
+	else if (sStatusRegister.bPage == ePageFocus)
+	{
+		firmPageFocus();
+	}
+
+	//-Exit ISR-//
+	__delay_cycles(DL_ANTI_NOISE * FREQUENCY);
+	P2IFG = 0;
+}
+//-------------------------------------------------------------------------------------------------
+/* TIMER0_A1 */
+// Every 500ms, TIMERA0_A1 is overflow and jump to this ISR
+#ifdef USE_DS1307
+#pragma vector = TIMER0_A1_VECTOR
+__interrupt void TIMER0_A1_ISR (void)
+{
+	if(TA0IV & TIMERA0_OVF)	// Overflow
+	{
+		varTimerCount++;
+
+		//-Every 1s, do this work-//
+		if(varTimerCount == 16)
+		{
+			timerGetCurrent();		// Get current time
+#ifdef TEST_UART
+			ds1307Print();
+#endif	/* TEST_UART */
+			varTimerCount = 0;		// Reset value of varTimerCount
+		}
+	}
+}
+#endif	/* USE_DS1307 */
+//-------------------------------------------------------------------------------------------------
+
+
+/**************************************************************************************************
+ *	END OF main.c
+ *************************************************************************************************/

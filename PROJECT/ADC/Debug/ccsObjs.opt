@@ -1,0 +1,1 @@
+"./main.obj" "./Source Files/Source.obj" "./Library Files/CLOCK_1_0_1.obj" "./Library Files/GPIO_1_0_1.obj" "./Library Files/USCI_UART_1_0_1.obj" "./Library Files/WATCHDOG_1_0_1.obj" "../lnk_msp430g2553.cmd" -l"libc.a" 

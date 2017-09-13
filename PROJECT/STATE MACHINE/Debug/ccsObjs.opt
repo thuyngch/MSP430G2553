@@ -1,0 +1,1 @@
+"./main.obj" "./Source Files/Motor.obj" "./Source Files/Sensor.obj" "./Source Files/Setup.obj" "./Source Files/State.obj" "./Library Files/CLOCK_1_2_3.obj" "./Library Files/GPIO_1_0_1.obj" "../lnk_msp430g2553.cmd" -l"libc.a" 

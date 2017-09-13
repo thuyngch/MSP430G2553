@@ -1,0 +1,1 @@
+"./main.obj" "./Source Files/COMMUNICATION.obj" "./Source Files/CONTROL.obj" "./Source Files/FLASH_1_0_1.obj" "./Library Files/CLOCK_1_2_3.obj" "./Library Files/GPIO_1_0_1.obj" "./Library Files/TIMERA_1_2_3.obj" "./Library Files/UCSI_I2C_2_0_1.obj" "./Library Files/USCI_UART_1_2_3.obj" "../lnk_msp430g2553.cmd" -l"libc.a" 
